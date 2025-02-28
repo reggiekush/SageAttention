@@ -30,6 +30,33 @@ HAS_SM89 = False
 HAS_SM90 = False
 HAS_SM120 = False
 
+# Right after "HAS_SM80 = False", etc., you could insert:
+
+ENV_GPU_ARCHS = os.getenv("GPU_ARCHS", "")
+compute_capabilities = set()
+
+if ENV_GPU_ARCHS:
+    # If user sets GPU_ARCHS=8.6,8.9, etc.
+    for arch in ENV_GPU_ARCHS.split(","):
+        arch = arch.strip()
+        if arch:
+            compute_capabilities.add(arch)
+    print(f"Using GPU_ARCHS from environment: {compute_capabilities}")
+else:
+    # Original GPU detection logic
+    device_count = torch.cuda.device_count()
+    for i in range(device_count):
+        major, minor = torch.cuda.get_device_capability(i)
+        if major < 8:
+            ...
+        compute_capabilities.add(f"{major}.{minor}")
+
+if not compute_capabilities:
+    raise RuntimeError(
+        "No GPUs found or no GPU_ARCHS specified. Please specify the target GPU "
+        "architectures via $GPU_ARCHS or build on a machine with GPUs."
+    )
+
 # Supported NVIDIA GPU architectures.
 SUPPORTED_ARCHS = {"8.0", "8.6", "8.9", "9.0", "12.0"}
 
